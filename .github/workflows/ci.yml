@@ -1,0 +1,111 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  validate:
+    name: Validate YAML and docker-compose
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y docker-compose yamllint
+
+      - name: Validate YAML files
+        run: yamllint .
+
+      - name: Validate docker-compose
+        run: docker-compose -f docker-compose.local.yml config
+
+  build_images:
+    name: Build Docker images
+    runs-on: ubuntu-latest
+    needs: validate
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build images
+        run: |
+          if [ -f "./services" ]; then
+            for srv in services/*; do
+              if [ -f "$srv/Dockerfile" ]; then
+                echo "Building image for $srv"
+                docker build -t "app-$(basename $srv):latest" $srv
+              fi
+            done
+          else
+            echo "Folder './services' not found, skipping image builds."
+          fi
+
+  tests:
+    name: Run tests
+    runs-on: ubuntu-latest
+    needs: build_images
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run tests (Node, Python, Go, Java — adapt conforme sua stack)
+        run: |
+          if [ -f "package.json" ]; then
+            npm install
+            npm test
+          elif [ -f "pytest.ini" ]; then
+            pip install -r requirements.txt
+            pytest
+          else
+            echo "Nenhum framework de teste encontrado, pulando."
+          fi
+
+  security_scan:
+    name: Security Scan (Trivy)
+    runs-on: ubuntu-latest
+    needs: build_images
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Trivy
+        uses: aquasecurity/trivy-action@master
+
+      - name: Scan Docker images
+        run: |
+          if [ -d "./services" ]; then
+            for srv in services/*; do
+              if [ -f "$srv/Dockerfile" ]; then
+                echo "Scanning image for $srv"
+                trivy image "app-$(basename $srv):latest"
+              fi
+            done
+          else
+            echo "No services folder found, skipping scan."
+          fi
+
+  # Área dedicada ao deploy (desativada por padrão)
+  deploy:
+    name: Deploy (manual)
+    runs-on: ubuntu-latest
+    needs: [ tests, security_scan ]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Placeholder deploy
+        run: echo "Configurar deploy para Docker Swarm, Kubernetes ou servidor remoto."
