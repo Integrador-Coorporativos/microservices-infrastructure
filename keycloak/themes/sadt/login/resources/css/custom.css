@@ -1,0 +1,42 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #1f1f1f;
+    color: #ccc;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.kc-login-container {
+    text-align: center;
+    background: #2c2c2c;
+    padding: 40px;
+    border-radius: 10px;
+}
+
+h1 span {
+    color: #4CAF50;
+}
+
+input, button {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    border: none;
+}
+
+button {
+    background-color: #4CAF50;
+    color: white;
+    cursor: pointer;
+}
+
+
+.kc-register-container {
+    text-align: center;
+    background: #2c2c2c;
+    padding: 40px;
+    border-radius: 10px;
+}
