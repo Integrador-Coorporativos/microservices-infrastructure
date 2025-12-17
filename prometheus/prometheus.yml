@@ -1,3 +1,4 @@
+---
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
@@ -18,3 +19,4 @@ scrape_configs:
     static_configs:
       - targets:
           - "redis-exporter:9121"
+          
