@@ -4,6 +4,20 @@ param (
     [switch]$Build
 )
 
+# Nome da rede
+$networkName = "infra"
+
+# Verifica se a rede existe
+$networkExists = docker network ls --format '{{.Name}}' | Select-String -Pattern "^$networkName$"
+
+if (-not $networkExists) {
+    Write-Host "🔧 Rede '$networkName' não encontrada. Criando..."
+    docker network create $networkName
+} else {
+    Write-Host "✅ Rede '$networkName' já existe."
+}
+
+
 Write-Host "🐳 Inicialização do Docker Compose (LOCAL)" -ForegroundColor Cyan
 
 # ================= CONFIG =================
