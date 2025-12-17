@@ -36,6 +36,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Clone private services
+        run: |
+          mkdir -p services
+          git clone https://$GH_TOKEN@github.com/Integrador-Coorporativos/import_and_report_service.git services/import_and_report_service
+          git clone https://$GH_TOKEN@github.com/Integrador-Coorporativos/academic_service.git services/academic_service
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
       - name: Install PowerShell
         run: |
           sudo apt-get update
@@ -57,6 +65,7 @@ jobs:
         run: |
           chmod +x ./tests/check-infra.sh
           ./tests/check-infra.sh
+
 
   tests:
     name: Run application tests
