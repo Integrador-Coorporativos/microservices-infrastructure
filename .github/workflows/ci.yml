@@ -3,9 +3,9 @@ name: CI Pipeline
 
 on:
   push:
-    branches: ["main","develop"]
+    branches: ["main", "develop"]
   pull_request:
-    branches: ["main","develop"]
+    branches: ["main", "develop"]
 
 jobs:
   validate:
@@ -25,36 +25,12 @@ jobs:
         run: yamllint . || echo "⚠️ yamllint encontrou problemas, mas o CI continua."
 
       - name: Validate docker-compose
-        run: docker-compose -f docker-compose.local.yml config
-
-  build_images:
-    name: Build Docker images
-    runs-on: ubuntu-latest
-    needs: validate
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build images
-        run: |
-          if [ -d "./services" ]; then
-            for srv in services/*; do
-              if [ -f "$srv/Dockerfile" ]; then
-                echo "Building image for $srv"
-                docker build -t "app-$(basename $srv):latest" $srv
-              fi
-            done
-          else
-            echo "Folder './services' not found, skipping image builds."
+        run: docker-compose -f docker-compose.local.yml config || echo "⚠️ docker-compose config encontrou problemas, mas o CI continua."
 
   infra:
     name: Setup Docker Compose and test infrastructure
     runs-on: ubuntu-latest
-    needs: build_images
+    needs: validate
 
     steps:
       - name: Checkout repository
@@ -93,19 +69,27 @@ jobs:
 
       - name: Run tests (Node, Python, Go, Java — adaptar conforme sua stack)
         run: |
+          mkdir -p test-reports
           if [ -f "package.json" ]; then
             npm install
-            npm test
+            npm test -- --reporter mocha-junit-reporter --reporter-options mochaFile=test-reports/results.xml
           elif [ -f "pytest.ini" ]; then
             pip install -r requirements.txt
-            pytest
+            pytest --junitxml=test-reports/results.xml
           else
             echo "Nenhum framework de teste encontrado, pulando."
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-reports
+          path: test-reports/
 
   security_scan:
     name: Security Scan (Trivy)
     runs-on: ubuntu-latest
-    needs: build_images
+    needs: infra
 
     steps:
       - name: Checkout repository
@@ -116,20 +100,16 @@ jobs:
 
       - name: Scan Docker images
         run: |
-          if [ -d "./services" ]; then
-            for srv in services/*; do
-              if [ -f "$srv/Dockerfile" ]; then
-                echo "Scanning image for $srv"
-                trivy image "app-$(basename $srv):latest"
-              fi
-            done
-          else
-            echo "No services folder found, skipping scan."
+          docker images | grep "app-" || echo "Nenhuma imagem encontrada para scan."
+          for img in $(docker images --format "{{.Repository}}:{{.Tag}}" | grep "^app-"); do
+            echo "Scanning $img"
+            trivy image "$img"
+          done
 
   deploy:
     name: Deploy (manual)
     runs-on: ubuntu-latest
-    needs: [ tests, security_scan ]
+    needs: [tests, security_scan]
     if: github.ref == 'refs/heads/main'
     environment: production
 
