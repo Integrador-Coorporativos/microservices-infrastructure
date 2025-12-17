@@ -16,7 +16,9 @@ jobs:
         uses: actions/checkout@v4
         
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y docker-compose yamllint pwsh
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose yamllint
 
       - name: Validate YAML files
         run: yamllint .
@@ -49,7 +51,7 @@ jobs:
             echo "Folder './services' not found, skipping image builds."
 
   infra:
-    name: Setup Docker Compose and test infra
+    name: Setup Docker Compose and test infrastructure
     runs-on: ubuntu-latest
     needs: build_images
 
@@ -57,13 +59,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install PowerShell
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget apt-transport-https software-properties-common
+          wget -q https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb
+          sudo dpkg -i packages-microsoft-prod.deb
+          sudo apt-get update
+          sudo apt-get install -y powershell
+
       - name: Start infrastructure (Linux)
         run: |
           chmod +x ./up.ps1
           pwsh ./up.ps1 --build
 
       - name: Wait for services to start
-        run: sleep 30  # aumentei o timeout para dar mais tempo aos containers
+        run: sleep 60  # maior timeout para garantir inicialização dos containers
 
       - name: Run infrastructure checks
         run: |
@@ -114,7 +125,6 @@ jobs:
           else
             echo "No services folder found, skipping scan."
 
-  # Área dedicada ao deploy (desativada por padrão)
   deploy:
     name: Deploy (manual)
     runs-on: ubuntu-latest
