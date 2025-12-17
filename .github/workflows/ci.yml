@@ -52,6 +52,9 @@ jobs:
           sudo dpkg -i packages-microsoft-prod.deb
           sudo apt-get update
           sudo apt-get install -y powershell
+          
+      - name: Create Docker network
+        run: docker network create infra || echo "Network already exists"
 
       - name: Start infrastructure (Linux)
         run: |
