@@ -136,27 +136,35 @@
     "directAccessGrantsEnabled": false
     },
     {
-    "clientId": "class-service-backend",
-    "name": "Class Service Backend",
+    "clientId": "academic-service-backend",
+    "name": "Academic Service Backend",
     "enabled": true,
-
     "publicClient": false,
     "clientAuthenticatorType": "client-secret",
     "serviceAccountsEnabled": true,
-
     "protocol": "openid-connect",
 
-    "standardFlowEnabled": false,
+
+    "standardFlowEnabled": true, 
     "implicitFlowEnabled": false,
-    "directAccessGrantsEnabled": false,
+    "directAccessGrantsEnabled": true, 
     "bearerOnly": false,
 
-    "redirectUris": [],
-    "webOrigins": [],
+
+    "redirectUris": [
+        "http://localhost:8085/*",
+        "http://localhost:8085/login/oauth2/code/keycloak"
+    ],
+    
+
+    "webOrigins": [
+        "*"
+    ],
 
     "attributes": {
         "access.token.lifespan": "300",
-        "client_credentials.use_refresh_token": "false"
+        "client_credentials.use_refresh_token": "false",
+        "post.logout.redirect.uris": "http://localhost:8085/*"
     }
     }
 ],

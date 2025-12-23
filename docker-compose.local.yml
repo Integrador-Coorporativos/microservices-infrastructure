@@ -75,8 +75,11 @@ services:
       RABBITMQ_PORT: ${RABBITMQ_PORT}
       RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
     ports:
-      - "8080:8080"
+      - "8085:8085"
     networks:
       - academic-network
       - infra
@@ -126,10 +129,10 @@ services:
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
-      KC_LOG_LEVEL: DEBUG
-      KC_LOG_CONSOLE_LEVEL: DEBUG
+      #KC_LOG_LEVEL: DEBUG
+      #KC_LOG_CONSOLE_LEVEL: DEBUG
     ports:
-      - "8081:8080"
+      - "8080:8080"
     depends_on:
       keycloak-db:
         condition: service_healthy
@@ -138,7 +141,7 @@ services:
       - academic-network
     volumes:
       - ./keycloak/realms/import:/opt/keycloak/data/import
-      - ./keycloak/themes/sadt:/opt/keycloak/themes/sadt
+      #- ./keycloak/themes/sadt:/opt/keycloak/themes/sadt
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -162,6 +165,9 @@ services:
       - redis_data:/data
     networks:
       - infra
+      - academic-network
+    ports:
+      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -209,6 +215,21 @@ services:
       - "--storage.tsdb.path=/prometheus"
     networks:
       - infra
+
+  pgadmin-local:
+    image: dpage/pgadmin4
+    container_name: pgadmin_local
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    networks:
+      - infra
+    depends_on:
+      - academic-db
+
 
 networks:
   academic-network:
