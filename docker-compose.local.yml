@@ -139,7 +139,7 @@ services:
       
       KC_HOSTNAME_STRICT: "false"
       KC_HTTP_ENABLED: "true"
-
+      KC_HEALTH_ENABLED: "true"
       #KC_LOG_LEVEL: DEBUG
       #KC_LOG_CONSOLE_LEVEL: DEBUG
     ports:

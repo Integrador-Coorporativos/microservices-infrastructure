@@ -77,30 +77,12 @@ jobs:
           name: test-reports
           path: test-reports/
 
-  security_scan:
-    name: Security Scan (Trivy)
-    runs-on: ubuntu-latest
-    needs: infra_and_tests
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install Trivy
-        uses: aquasecurity/trivy-action@master
-
-      - name: Scan Docker images
-        run: |
-          docker images | grep "app-" || echo "Nenhuma imagem encontrada para scan."
-          for img in $(docker images --format "{{.Repository}}:{{.Tag}}" | grep "^app-"); do
-            echo "Scanning $img"
-            trivy image "$img"
-          done
 
 # 2. Job de Build e Push para o Amazon ECR
   build_and_push:
     name: Build & Push to ECR
     runs-on: ubuntu-latest
+    needs: infra_and_tests
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
@@ -135,11 +117,32 @@ jobs:
           docker build -t $ECR_REGISTRY/import_and_report_service:latest ./services/import_and_report_service
           docker push $ECR_REGISTRY/import_and_report_service:latest
 
+
+  security_scan:
+    name: Security Scan (Trivy)
+    runs-on: ubuntu-latest
+    needs: build_and_push
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Trivy
+        uses: aquasecurity/trivy-action@master
+
+      - name: Scan Docker images
+        run: |
+          docker images | grep "app-" || echo "Nenhuma imagem encontrada para scan."
+          for img in $(docker images --format "{{.Repository}}:{{.Tag}}" | grep "^app-"); do
+            echo "Scanning $img"
+            trivy image "$img"
+          done
+
   # 3. Job de Deploy no EC2
   deploy:
     name: Deploy to EC2 (Amazon Linux 2023)
     runs-on: ubuntu-latest
-    needs: build_and_push
+    needs: [build_and_push, security_scan]
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
