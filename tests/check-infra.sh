@@ -32,22 +32,19 @@ databases=(
     "keycloakdb|$KC_DB_USERNAME|keycloak"
 )
 
-# ===================== TESTE HTTP (MELHORADO) =====================
+# ===================== TESTE HTTP (VERSÃO RESILIENTE) =====================
 echo -e "\n🔍 Verificando endpoints HTTP/REST..."
 for svc in "${services[@]}"; do
     name="${svc%%|*}"
     url="${svc##*|}"
 
-    # Pegamos o código HTTP sem travar o script
-    status_code=$(curl --silent --output /dev/null --write-out "%{http_code}" --max-time 5 "$url")
+    # Adicionamos || echo "000" para que o script não morra se o curl der erro 52 ou 7
+    status_code=$(curl --silent --output /dev/null --write-out "%{http_code}" --max-time 10 "$url" || echo "000")
 
-    # Consideramos saudável se: 200 (OK), 401 (Unauthorized) ou 302 (Redirect para Login)
     if [[ "$status_code" =~ ^(200|401|302|404)$ ]]; then
-        # Nota: 404 às vezes acontece se o Swagger/Actuator estiver em outro path, 
-        # mas indica que o servidor web está respondendo.
         echo "✅ $name respondendo (Status: $status_code) em $url"
     else
-        echo "❌ $name não respondeu corretamente (Status: $status_code) em $url"
+        echo "❌ $name falhou! (Status: $status_code - Erro de conexão ou timeout) em $url"
         allHealthy=false
     fi
 done
