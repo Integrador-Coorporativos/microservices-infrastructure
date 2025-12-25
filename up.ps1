@@ -54,11 +54,11 @@ if ($Build) {
 # Em produção, geralmente queremos dar um pull antes para garantir as imagens do ECR
 if ($Prod) {
     Write-Host "📥 Atualizando imagens do ECR/Docker Hub..." -ForegroundColor Gray
-    docker compose -f $ComposeFile pull
+    docker-compose -f $ComposeFile pull
 }
 
 Write-Host "`n🐳 Executando: docker-compose -f $ComposeFile up -d $($Build ? '--build' : '')" -ForegroundColor Cyan
-docker compose @ComposeArgs
+docker-compose @ComposeArgs
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "`n✅ Infraestrutura iniciada com sucesso via $ComposeFile!" -ForegroundColor Green
