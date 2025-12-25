@@ -78,71 +78,48 @@ jobs:
           path: test-reports/
 
 
-# 2. Job de Build e Push para o Amazon ECR
   build_and_push:
-    name: Build & Push to ECR
-    runs-on: ubuntu-latest
-    needs: infra_and_tests
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@v4
-      
-      # Clone dos serviços privados (necessário para o build)
-      - name: Clone private services
-        run: |
-          mkdir -p services
-          git clone https://${{ secrets.GH_TOKEN }}@github.com/Integrador-Coorporativos/import_and_report_service.git services/import_and_report_service
-          git clone https://${{ secrets.GH_TOKEN }}@github.com/Integrador-Coorporativos/academic_service.git services/academic_service
+      name: Build, Scan & Push to Docker Hub
+      runs-on: ubuntu-latest
+      if: github.ref == 'refs/heads/main'
+      steps:
+        - uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+        - name: Clone private services
+          run: |
+            mkdir -p services
+            git clone https://${{ secrets.GH_TOKEN }}@github.com/Integrador-Coorporativos/import_and_report_service.git services/import_and_report_service
+            git clone https://${{ secrets.GH_TOKEN }}@github.com/Integrador-Coorporativos/academic_service.git services/academic_service
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+        - name: Login to Docker Hub
+          uses: docker/login-action@v3
+          with:
+            username: ${{ secrets.DOCKERHUB_USERNAME }}
+            password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and Push Images
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        run: |
-          # Build & Push Academic Service
-          docker build -t $ECR_REGISTRY/academic_service:latest ./services/academic_service
-          docker push $ECR_REGISTRY/academic_service:latest
-          
-          # Build & Push Import/Report Service
-          docker build -t $ECR_REGISTRY/import_and_report_service:latest ./services/import_and_report_service
-          docker push $ECR_REGISTRY/import_and_report_service:latest
+        - name: Install Trivy
+          run: curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
+        - name: Build, Scan & Push Academic Service
+          run: |
+            # Formato no Docker Hub: usuario/repositorio:tag
+            IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/academic_service:latest
+            docker build -t $IMAGE_NAME ./services/academic_service
+            trivy image --exit-code 1 --severity CRITICAL $IMAGE_NAME
+            docker push $IMAGE_NAME
 
-  security_scan:
-    name: Security Scan (Trivy)
-    runs-on: ubuntu-latest
-    needs: build_and_push
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install Trivy
-        uses: aquasecurity/trivy-action@master
-
-      - name: Scan Docker images
-        run: |
-          docker images | grep "app-" || echo "Nenhuma imagem encontrada para scan."
-          for img in $(docker images --format "{{.Repository}}:{{.Tag}}" | grep "^app-"); do
-            echo "Scanning $img"
-            trivy image "$img"
-          done
+        - name: Build, Scan & Push Import Service
+          run: |
+            IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/import_and_report_service:latest
+            docker build -t $IMAGE_NAME ./services/import_and_report_service
+            trivy image --exit-code 1 --severity CRITICAL $IMAGE_NAME
+            docker push $IMAGE_NAME
 
   # 3. Job de Deploy no EC2
   deploy:
     name: Deploy to EC2 (Amazon Linux 2023)
     runs-on: ubuntu-latest
-    needs: [build_and_push, security_scan]
+    needs: build_and_push
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -153,11 +130,9 @@ jobs:
           # Passamos as variáveis de ambiente para o script remoto
           envs: GITHUB_SHA
           script: |
-            # Login no ECR dentro do servidor
-            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
 
             # Entrar na pasta do projeto (ajuste se necessário)
-            cd ~/if-performance
+            cd ~/microservices-infrastructure
 
             # Atualizar o arquivo .env dinamicamente com os segredos do GitHub
             cat > .env << EOL
@@ -188,11 +163,12 @@ jobs:
             # Minio
             MINIO_ROOT_USER=${{ secrets.MINIO_ROOT_USER }}
             MINIO_ROOT_PASSWORD=${{ secrets.MINIO_ROOT_PASSWORD }}
+
+            DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
             EOL
 
-            # No Amazon Linux 2023 o comando é 'docker compose'
-            docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d
+            chmod +x ./up.ps1
+            pwsh ./up.ps1 -Prod -Build
             
             # Limpeza de imagens antigas para não encher o disco
             docker image prune -af
