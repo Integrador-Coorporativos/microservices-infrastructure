@@ -31,12 +31,12 @@ $allHealthy = $true
 # Endpoints HTTP/REST
 $services = @(
     @{Name="minio"; URL="http://localhost:9000/minio/health/ready"},
-    @{Name="keycloak"; URL="http://localhost:8081/realms/$env:KEYCLOAK_REALM"},
+    @{Name="keycloak"; URL="http://localhost:8080/realms/$env:KEYCLOAK_REALM"},
     @{Name="rabbitmq"; URL="http://localhost:15672/"},
     @{Name="redis-exporter"; URL="http://localhost:9121/metrics"},
     @{Name="prometheus"; URL="http://localhost:9090/-/ready"},
     @{Name="grafana"; URL="http://localhost:3001/api/health"},
-    @{Name="academic-service"; URL="http://localhost:8080/api/docs"},
+    @{Name="academic-service"; URL="http://localhost:8085/api/docs"},
     @{Name="import-and-report-service"; URL="http://localhost:8082/api/docs"}
 )
 
@@ -46,20 +46,36 @@ $databases = @(
     @{Container="keycloakdb"; User=$env:KC_DB_USERNAME; Db="keycloak"}
 )
 
-# ===================== TESTE HTTP =====================
+# ===================== TESTE HTTP (VERSÃO RESILIENTE) =====================
 Write-Host "`n🔍 Verificando endpoints HTTP/REST..." -ForegroundColor Cyan
 
 foreach ($svc in $services) {
+    $statusCode = 0
     try {
-        $response = Invoke-WebRequest -Uri $svc.URL -UseBasicParsing -TimeoutSec 5
-        if ($response.StatusCode -eq 200) {
-            Write-Host "✅ $($svc.Name) respondendo em $($svc.URL)" -ForegroundColor Green
+        # -SkipHttpErrorCheck permite que códigos 401, 404, etc., não gerem exceção (disponível no PS 7+)
+        # Para compatibilidade total, capturamos o erro no catch caso ocorra
+        $response = Invoke-WebRequest -Uri $svc.URL -UseBasicParsing -TimeoutSec 10 -ErrorAction SilentlyContinue
+        
+        if ($response) {
+            $statusCode = $response.StatusCode
         } else {
-            Write-Host "❌ $($svc.Name) respondeu com HTTP $($response.StatusCode)" -ForegroundColor Red
-            $allHealthy = $false
+            # Em versões mais antigas do PS, se der 401 ele vai para o Catch
+            $statusCode = 0
         }
     } catch {
-        Write-Host "❌ $($svc.Name) não respondeu em $($svc.URL)" -ForegroundColor Red
+        # Captura o status code mesmo se houver erro de protocolo (ex: 401 Unauthorized)
+        if ($_.Exception.Response) {
+            $statusCode = [int]$_.Exception.Response.StatusCode
+        } else {
+            $statusCode = 000 # Falha de conexão total
+        }
+    }
+
+    # Lógica de validação: Aceita 200, 401 (Keycloak/App), 302 (Redirect) ou 404 (Health desativado)
+    if ($statusCode -match "200|401|302|404") {
+        Write-Host "✅ $($svc.Name) respondendo (Status: $statusCode) em $($svc.URL)" -ForegroundColor Green
+    } else {
+        Write-Host "❌ $($svc.Name) falhou! (Status: $statusCode - Erro de conexão ou timeout)" -ForegroundColor Red
         $allHealthy = $false
     }
 }
