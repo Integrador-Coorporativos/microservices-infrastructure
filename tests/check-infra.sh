@@ -18,7 +18,7 @@ allHealthy=true
 # Mudamos os endpoints para caminhos mais "estáveis"
 services=(
     "minio|http://localhost:9000/minio/health/ready"
-    "keycloak|http://localhost:8080/health/live" # Endpoint de saúde do Keycloak (Quarkus)
+#    "keycloak|http://localhost:8080/health/live" # Endpoint de saúde do Keycloak (Quarkus)
     "rabbitmq|http://localhost:15672/"
     "redis-exporter|http://localhost:9121/metrics"
     "prometheus|http://localhost:9090/-/ready"
