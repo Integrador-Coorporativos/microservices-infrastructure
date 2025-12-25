@@ -97,16 +97,99 @@ jobs:
             trivy image "$img"
           done
 
-  deploy:
-    name: Deploy (manual)
+# 2. Job de Build e Push para o Amazon ECR
+  build_and_push:
+    name: Build & Push to ECR
     runs-on: ubuntu-latest
-    needs: [infra_and_tests, security_scan]
     if: github.ref == 'refs/heads/main'
-    environment: production
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      
+      # Clone dos serviços privados (necessário para o build)
+      - name: Clone private services
+        run: |
+          mkdir -p services
+          git clone https://${{ secrets.GH_TOKEN }}@github.com/Integrador-Coorporativos/import_and_report_service.git services/import_and_report_service
+          git clone https://${{ secrets.GH_TOKEN }}@github.com/Integrador-Coorporativos/academic_service.git services/academic_service
 
-      - name: Placeholder deploy
-        run: echo "Configurar deploy para Docker Swarm, Kubernetes ou servidor remoto."
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and Push Images
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          # Build & Push Academic Service
+          docker build -t $ECR_REGISTRY/academic_service:latest ./services/academic_service
+          docker push $ECR_REGISTRY/academic_service:latest
+          
+          # Build & Push Import/Report Service
+          docker build -t $ECR_REGISTRY/import_and_report_service:latest ./services/import_and_report_service
+          docker push $ECR_REGISTRY/import_and_report_service:latest
+
+  # 3. Job de Deploy no EC2
+  deploy:
+    name: Deploy to EC2 (Amazon Linux 2023)
+    runs-on: ubuntu-latest
+    needs: build_and_push
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          # Passamos as variáveis de ambiente para o script remoto
+          envs: GITHUB_SHA
+          script: |
+            # Login no ECR dentro do servidor
+            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
+
+            # Entrar na pasta do projeto (ajuste se necessário)
+            cd ~/if-performance
+
+            # Atualizar o arquivo .env dinamicamente com os segredos do GitHub
+            cat > .env << EOL
+            # Infra
+            ECR_REGISTRY=${{ secrets.ECR_REGISTRY }}
+            AWS_REGION=${{ secrets.AWS_REGION }}
+            
+            # Keycloak
+            KC_DB_USERNAME=${{ secrets.KC_DB_USERNAME }}
+            KC_DB_PASSWORD=${{ secrets.KC_DB_PASSWORD }}
+            KEYCLOAK_ADMIN_USER=${{ secrets.KEYCLOAK_ADMIN_USER }}
+            KEYCLOAK_ADMIN_PASSWORD=${{ secrets.KEYCLOAK_ADMIN_PASSWORD }}
+            KEYCLOAK_CLIENT_SECRET=${{ secrets.KEYCLOAK_CLIENT_SECRET }}
+            KEYCLOAK_SERVER_URL=${{ secrets.KEYCLOAK_SERVER_URL }}
+            KEYCLOAK_REALM=${{ secrets.KEYCLOAK_REALM }}
+            KEYCLOAK_CLIENT_ID=${{ secrets.KEYCLOAK_CLIENT_ID }}
+
+            # Database & Services
+            SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}
+            SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }}
+            SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}
+            
+            # Rabbit & Redis
+            RABBITMQ_USERNAME=${{ secrets.RABBITMQ_USERNAME }}
+            RABBITMQ_PASSWORD=${{ secrets.RABBITMQ_PASSWORD }}
+            REDIS_HOST=redis-local
+            
+            # Minio
+            MINIO_ROOT_USER=${{ secrets.MINIO_ROOT_USER }}
+            MINIO_ROOT_PASSWORD=${{ secrets.MINIO_ROOT_PASSWORD }}
+            EOL
+
+            # No Amazon Linux 2023 o comando é 'docker compose'
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d
+            
+            # Limpeza de imagens antigas para não encher o disco
+            docker image prune -af

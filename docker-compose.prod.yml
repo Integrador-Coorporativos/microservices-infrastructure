@@ -1,10 +1,13 @@
----
-
 services:
+  # --- ARMAZENAMENTO DE OBJETOS ---
   minio:
-    image: minio/minio:latest
-    command: server /data
-    restart: always
+    image: minio/minio:RELEASE.2024-05-10T01-39-19Z # Versão específica para estabilidade
+    container_name: minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
@@ -12,57 +15,195 @@ services:
       - minio_data:/data
     networks:
       - infra
-    ports:
-      - "9000:9000"
 
-  postgres:
-    image: postgres:15
+  # --- BANCOS DE DADOS ---
+  keycloak-db:
+    image: postgres:15-alpine
+    container_name: keycloakdb
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: ${KC_DB_USERNAME}
+      POSTGRES_PASSWORD: ${KC_DB_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./postgres-init.sql:/docker-entrypoint-initdb.d/postgres-init.sql
+      - keycloak_db_data:/var/lib/postgresql/data
     networks:
       - infra
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${KC_DB_USERNAME}", "-d", "keycloak"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
+  academic-db:
+    image: postgres:15-alpine
+    container_name: academicdb
+    restart: always
+    environment:
+      POSTGRES_DB: academicdb
+      POSTGRES_USER: ${SPRING_DATASOURCE_USERNAME}
+      POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+    volumes:
+      - academic_db_data:/var/lib/postgresql/data
+    networks:
+      - infra
+      - academic-network
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${SPRING_DATASOURCE_USERNAME}", "-d", "academicdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # --- SERVIÇOS DO ECOSSISTEMA (Docker Hub) ---
+  academic-service:
+    image: karleduardo/academic_service:v1 # Imagem puxada do Docker Hub
+    container_name: academic-service
+    restart: always
+    depends_on:
+      academic-db:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      KEYCLOAK_SERVER_URL: ${KEYCLOAK_SERVER_URL}
+      KEYCLOAK_ADMIN_USER: ${KEYCLOAK_ADMIN_USER}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
+      MINIO_SERVER_URL: ${MINIO_SERVER_URL}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      BUCKET_FILES_NAME: ${BUCKET_FILES_NAME}
+      BUCKET_IMAGES_NAME: ${BUCKET_IMAGES_NAME}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      REDIS_HOST: redis-local
+      REDIS_PORT: 6379
+    ports:
+      - "8085:8085"
+    networks:
+      - academic-network
+      - infra
+
+  import-and-report-service:
+    image: karleduardo/import_and_report_service:latest
+    container_name: import-and-report-service
+    restart: always
+    depends_on:
+      academic-db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      KEYCLOAK_SERVER_URL: ${KEYCLOAK_SERVER_URL}
+      RABBITMQ_HOST: rabbitmq
+      MINIO_SERVER_URL: ${MINIO_SERVER_URL}
+      MINIO_ADMIN_USER: ${MINIO_ROOT_USER}
+      MINIO_ADMIN_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "8082:8082"
+    networks:
+      - academic-network
+      - infra
+
+  # --- IDENTITY PROVIDER ---
   keycloak:
     image: quay.io/keycloak/keycloak:25.0
-    command: start
+    container_name: keycloak
     restart: always
+    # Em produção REAL, o comando seria 'start' com certificados SSL configurados
+    command: start-dev --import-realm 
     environment:
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
-      KC_DB_USERNAME: keycloak_user
+      KC_DB_URL: jdbc:postgresql://keycloakdb:5432/keycloak
+      KC_DB_USERNAME: ${KC_DB_USERNAME}
       KC_DB_PASSWORD: ${KC_DB_PASSWORD}
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
-    depends_on:
-      - postgres
-    networks:
-      - infra
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
     ports:
       - "8080:8080"
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    networks:
+      - infra
+      - academic-network
+    volumes:
+      - ./keycloak/realms/import:/opt/keycloak/data/import
 
+  # --- MENSAGERIA E CACHE ---
   rabbitmq:
-    image: rabbitmq:3-management
-    restart: always
+    image: rabbitmq:3.12-management-alpine
+    container_name: rabbitmq
+    restart: unless-stopped
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - infra
+      - academic-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis-local
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - infra
+      - academic-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+
+  # --- MONITORAMENTO ---
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - infra
+
+  grafana:
+    image: grafana/grafana-enterprise:latest
+    container_name: grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD}
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "3001:3000"
+    volumes:
+      - grafana_storage:/var/lib/grafana
+    networks:
+      - infra
 
 networks:
+  academic-network:
+    driver: bridge
   infra:
+    driver: bridge # Removi o 'external: true' para que o compose possa criar a rede se ela não existir
 
 volumes:
+  academic_db_data:
   minio_data:
-  postgres_data:
   rabbitmq_data:
+  redis_data:
+  keycloak_db_data:
+  grafana_storage:
+  prometheus_data:

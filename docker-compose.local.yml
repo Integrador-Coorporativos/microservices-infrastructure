@@ -23,7 +23,7 @@ services:
       POSTGRES_USER: ${KC_DB_USERNAME}
       POSTGRES_PASSWORD: ${KC_DB_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - keycloak_db_data:/var/lib/postgresql/data
     networks:
       - infra
     healthcheck:
@@ -127,8 +127,19 @@ services:
     container_name: keycloak
     command: start-dev --import-realm
     environment:
+      # Conexão com o banco que você definiu acima
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloakdb:5432/keycloak
+      KC_DB_USERNAME: ${KC_DB_USERNAME}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      
+      # Admin do Keycloak
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+
       #KC_LOG_LEVEL: DEBUG
       #KC_LOG_CONSOLE_LEVEL: DEBUG
     ports:
@@ -243,7 +254,7 @@ volumes:
   postgres_data:
   rabbitmq_data:
   redis_data:
-  keycloak-db-data:
+  keycloak_db_data:
   keycloak-data:
   grafana_storage:
   prometheus_data:
