@@ -28,8 +28,8 @@ services=(
 )
 
 databases=(
-    "academicdb|$SPRING_DATASOURCE_USERNAME|academicdb"
-    "keycloakdb|$KC_DB_USERNAME|keycloak"
+    #"academicdb|$SPRING_DATASOURCE_USERNAME|academicdb"
+    #"keycloakdb|$KC_DB_USERNAME|keycloak"
 )
 
 # ===================== TESTE HTTP (VERSÃO RESILIENTE) =====================
