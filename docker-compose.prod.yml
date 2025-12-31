@@ -71,6 +71,7 @@ services:
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
       KEYCLOAK_SERVER_URL: ${KEYCLOAK_SERVER_URL}
       KEYCLOAK_ADMIN_USER: ${KEYCLOAK_ADMIN_USER}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
@@ -86,7 +87,6 @@ services:
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
-      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
     ports:
       - "8085:8085"
     networks:
@@ -117,6 +117,8 @@ services:
       MINIO_ADMIN_PASSWORD: ${MINIO_ROOT_PASSWORD}
       BUCKET_FILES_NAME: ${BUCKET_FILES_NAME}
       BUCKET_IMAGES_NAME: ${BUCKET_IMAGES_NAME}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
     ports:
       - "8082:8082"
     networks:
@@ -203,6 +205,23 @@ services:
       - grafana_storage:/var/lib/grafana
     networks:
       - infra
+
+  nginx:
+      image: nginx:alpine
+      container_name: nginx-srv
+      restart: always
+      ports:
+        - "80:80"
+        - "443:443"
+      volumes:
+        # O Docker vai pegar a pasta que o Git acabou de baixar
+        - ./nginx/conf.d:/etc/nginx/conf.d
+        - ./nginx/certs:/etc/nginx/certs
+      depends_on:
+        - import-and-report-service
+        - academic-service
+      networks:
+        - infra
 
 networks:
   academic-network:

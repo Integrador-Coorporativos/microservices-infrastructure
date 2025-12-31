@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: academic-service-entry
+spec:
+  type: LoadBalancer # No Docker Desktop, isso mapeia para o localhost automaticamente
+  selector:
+    app: academic-service-teste # Deve ser o mesmo label do seu Deployment
+  ports:
+    - protocol: TCP
+      port: 8085
+      targetPort: 8085
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: academic-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: academic-service-teste
+  template:
+    metadata:
+      labels:
+        app: academic-service-teste
+    spec:
+      containers:
+      - name: academic-service
+        image: karleduardo/academic_service:latest
+        ports:
+        - containerPort: 8085
+        envFrom:
+        - configMapRef:
+            name: academic-config  # Puxa tudo que está no ConfigMap
+        - secretRef:
+            name: academic-secrets # Puxa tudo que está na Secret

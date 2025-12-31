@@ -1,0 +1,64 @@
+# --- CONFIGURAÇÕES PÚBLICAS (ConfigMap) ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: academic-config
+data:
+  KC_DB: "postgres"
+  KC_DB_URL: "jdbc:postgresql://keycloakdb:5432/keycloak"
+  KC_DB_USERNAME: "kc_srv_db_admin_52"
+  KC_HOSTNAME_STRICT: "false"
+  KC_HTTP_ENABLED: "true"
+  KEYCLOAK_SERVER_URL: "http://host.docker.internal:8080"
+  KEYCLOAK_REALM: "ifrn"
+  KEYCLOAK_CLIENT_ID: "academic-service-backend"
+
+---
+
+# --- KEYCLOAK ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak-entry
+spec:
+  type: LoadBalancer
+  selector:
+    app: keycloak-teste
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak-teste
+  template:
+    metadata:
+      labels:
+        app: keycloak-teste
+    spec:
+      containers:
+      - name: keycloak
+        image: quay.io/keycloak/keycloak:25.0
+        args: ["start-dev", "--import-realm"]
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: academic-config
+        - secretRef:
+            name: academic-secrets # O K8s injeta as senhas aqui automaticamente
+        volumeMounts:
+          - name: realm-import
+            mountPath: /opt/keycloak/data/import
+      volumes:
+        - name: realm-import
+          hostPath:
+            path: /run/desktop/mnt/host/c/Users/Eduardo/Documents/IFRN/2025.2/infrastructure/keycloak/realms/import
+            type: Directory

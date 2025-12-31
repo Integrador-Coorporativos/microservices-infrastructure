@@ -1,0 +1,71 @@
+# 1. Solicitação de Armazenamento (PersistentVolumeClaim)
+# No Docker Desktop, isso cria automaticamente um volume no seu disco.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: keycloak-db-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+# 2. Serviço para o Banco de Dados
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloakdb # Nome usado pelo Keycloak na string de conexão
+spec:
+  ports:
+    - port: 5432
+  selector:
+    app: postgres-db
+---
+# 3. Deployment do PostgreSQL
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-db
+spec:
+  selector:
+    matchLabels:
+      app: postgres-db
+  template:
+    metadata:
+      labels:
+        app: postgres-db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        env:
+          - name: POSTGRES_DB
+            value: "keycloak"
+          # Puxa o usuário do ConfigMap (não é sensível)
+          - name: POSTGRES_USER
+            valueFrom:
+              configMapKeyRef:
+                name: academic-config
+                key: KC_DB_USERNAME
+          # Puxa a senha do Secret (protegido, fora do GitHub)
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: academic-secrets
+                key: KC_DB_PASSWORD
+        ports:
+        - containerPort: 5432
+        # Healthcheck convertido para o padrão Kubernetes
+        livenessProbe:
+          exec:
+            command: ["pg_isready", "-U", "kc_srv_db_admin_52", "-d", "keycloak"]
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        volumeMounts:
+        - name: db-data
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: db-data
+        persistentVolumeClaim:
+          claimName: keycloak-db-pvc
