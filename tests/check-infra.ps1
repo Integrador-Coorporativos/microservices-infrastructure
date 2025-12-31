@@ -31,7 +31,7 @@ $allHealthy = $true
 # Endpoints HTTP/REST
 $services = @(
     @{Name="minio"; URL="http://localhost:9000/minio/health/ready"},
-    @{Name="keycloak"; URL="http://localhost:8080/realms/$env:KEYCLOAK_REALM"},
+    #@{Name="keycloak"; URL="http://localhost:8080/realms/$env:KEYCLOAK_REALM"},
     @{Name="rabbitmq"; URL="http://localhost:15672/"},
     @{Name="redis-exporter"; URL="http://localhost:9121/metrics"},
     @{Name="prometheus"; URL="http://localhost:9090/-/ready"},

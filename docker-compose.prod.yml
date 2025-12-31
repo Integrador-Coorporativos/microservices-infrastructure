@@ -129,18 +129,26 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:25.0
     container_name: keycloak
-    restart: always
-    # Em produção REAL, o comando seria 'start' com certificados SSL configurados
-    command: start-dev --import-realm 
+    command: start --import-realm --db=postgres
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://keycloakdb:5432/keycloak
       KC_DB_USERNAME: ${KC_DB_USERNAME}
       KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      KC_DB_SCHEMA: public
+
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
-      KC_HOSTNAME_STRICT: "false"
-      KC_HTTP_ENABLED: "true"
+      
+      # --- CONFIGURAÇÃO DE PRODUÇÃO / PROXY ---
+      KC_HOSTNAME: ${KC_HOSTNAME}
+      KC_PROXY_HEADERS: xforwarded # Essencial para ler os headers do Nginx
+      KC_HTTP_ENABLED: "true"      # Comunicação interna Nginx -> Keycloak via HTTP
+      KC_HTTP_RELATIVE_PATH: /     # Caso queira usar subcaminho, ajuste aqui
+      
+      KC_METRICS_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+      KC_LOG_LEVEL: INFO # DEBUG em produção gera log demais, use INFO
     ports:
       - "8080:8080"
     depends_on:
@@ -178,8 +186,21 @@ services:
     networks:
       - infra
       - academic-network
+    ports:
+      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
+
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: redis-exporter
+    restart: unless-stopped
+    environment:
+      REDIS_ADDR: redis:6379
+    ports:
+      - "9121:9121"
+    networks:
+      - infra
 
   # --- MONITORAMENTO ---
   prometheus:
@@ -189,6 +210,8 @@ services:
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
     networks:
       - infra
 
