@@ -2,26 +2,30 @@
 param (
     [switch]$Update,
     [switch]$Build,
-    [switch]$Prod    # Novo parâmetro para identificar o ambiente
+    [switch]$Prod    
 )
 
-# --- DETECÇÃO UNIVERSAL DO COMANDO DOCKER COMPOSE ---
-# Tenta 'docker compose' (V2), se falhar usa 'docker-compose' (V1)
-$DockerCmd = "docker-compose"
+# --- DETECÇÃO CORRIGIDA ---
+$IsV2 = $false
 try {
-    # Testa se o plugin 'compose' do comando 'docker' responde
+    # No terminal, 'docker compose' é um comando composto. 
+    # Testamos se o plugin V2 responde.
     docker compose version > $null 2>&1
-    if ($LASTEXITCODE -eq 0) {
-        $DockerCmd = "docker compose"
+    if ($LASTEXITCODE -eq 0) { $IsV2 = $true }
+} catch {}
+
+# Função auxiliar para evitar o erro de "command not recognized"
+function Invoke-DockerCompose {
+    param([string[]]$Arguments)
+    if ($IsV2) {
+        docker compose @Arguments
+    } else {
+        docker-compose @Arguments
     }
-} catch {
-    $DockerCmd = "docker-compose"
 }
 
 # Nome da rede
 $networkName = "infra"
-
-# Verifica se a rede existe
 $networkExists = docker network ls --format '{{.Name}}' | Select-String -Pattern "^$networkName$"
 
 if (-not $networkExists) {
@@ -32,7 +36,6 @@ if (-not $networkExists) {
 }
 
 # ================= CONFIG (DINÂMICA) =================
-
 if ($Prod) {
     $ComposeFile = "docker-compose.prod.yml"
     Write-Host "🚀 AMBIENTE: PRODUÇÃO (EC2)" -ForegroundColor Magenta
@@ -42,37 +45,29 @@ if ($Prod) {
 }
 
 # =====================================================
-
 if (-not $Prod) {
     Write-Host "🛠️ Executando Bootstrap..." -ForegroundColor Gray
     $BootstrapArgs = @()
     if ($Update) { $BootstrapArgs += "--update" }
     pwsh ./bootstrap.ps1 @BootstrapArgs
-
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "❌ Erro no bootstrap. Abortando."
-        exit 1
-    }
+    if ($LASTEXITCODE -ne 0) { exit 1 }
 }
 
 # Em produção, garantimos o pull das imagens
 if ($Prod) {
     Write-Host "📥 Atualizando imagens do ECR/Docker Hub..." -ForegroundColor Gray
-    # Usamos o operador de chamada '&' para executar a variável como comando
-    & (Get-Variable DockerCmd -ValueOnly) -f $ComposeFile pull
+    Invoke-DockerCompose -Arguments @("-f", $ComposeFile, "pull")
 }
 
-# Docker compose args (Removido o 'up' e '-d' fixos para usar dinamicamente no comando final)
+# Preparando argumentos finais
 $ComposeArgs = @("-f", $ComposeFile, "up", "-d", "--remove-orphans")
+if ($Build) { $ComposeArgs += "--build" }
 
-if ($Build) {
-    $ComposeArgs += "--build"
-}
+$CmdLabel = $IsV2 ? "docker compose" : "docker-compose"
+Write-Host "`n🐳 Executando: $CmdLabel -f $ComposeFile up -d" -ForegroundColor Cyan
 
-Write-Host "`n🐳 Executando: $DockerCmd -f $ComposeFile up -d $($Build ? '--build' : '')" -ForegroundColor Cyan
-
-# Execução Final
-& (Get-Variable DockerCmd -ValueOnly) @ComposeArgs
+# CHAMADA FINAL CORRIGIDA
+Invoke-DockerCompose -Arguments $ComposeArgs
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "`n✅ Infraestrutura iniciada com sucesso via $ComposeFile!" -ForegroundColor Green
