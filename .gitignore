@@ -1,3 +1,5 @@
 .env
 anotacoes.md
 .secrets
+privkey.pem
+fullchain.pem 
