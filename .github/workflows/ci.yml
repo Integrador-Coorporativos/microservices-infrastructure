@@ -59,7 +59,7 @@ jobs:
       - name: Start infrastructure (Linux)
         run: |
           chmod +x ./up.ps1
-          pwsh ./up.ps1 --build
+          pwsh ./up.ps1 -prod -build
 
       - name: Wait for services to start
         run: sleep 60
