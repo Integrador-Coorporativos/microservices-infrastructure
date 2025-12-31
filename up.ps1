@@ -5,6 +5,19 @@ param (
     [switch]$Prod    # Novo parâmetro para identificar o ambiente
 )
 
+# --- DETECÇÃO UNIVERSAL DO COMANDO DOCKER COMPOSE ---
+# Tenta 'docker compose' (V2), se falhar usa 'docker-compose' (V1)
+$DockerCmd = "docker-compose"
+try {
+    # Testa se o plugin 'compose' do comando 'docker' responde
+    docker compose version > $null 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        $DockerCmd = "docker compose"
+    }
+} catch {
+    $DockerCmd = "docker-compose"
+}
+
 # Nome da rede
 $networkName = "infra"
 
@@ -22,7 +35,7 @@ if (-not $networkExists) {
 
 if ($Prod) {
     $ComposeFile = "docker-compose.prod.yml"
-    Write-Host "🚀 AMBIENTE: PRODUÇÃO (EC2)" -ForegroundColor Magenta -Bold
+    Write-Host "🚀 AMBIENTE: PRODUÇÃO (EC2)" -ForegroundColor Magenta
 } else {
     $ComposeFile = "docker-compose.local.yml"
     Write-Host "💻 AMBIENTE: LOCAL" -ForegroundColor Cyan
@@ -30,8 +43,6 @@ if ($Prod) {
 
 # =====================================================
 
-# O Bootstrap geralmente só faz sentido localmente (para configurar certificados ou envs de dev)
-# Se estiver em prod, podemos pular ou rodar apenas se necessário
 if (-not $Prod) {
     Write-Host "🛠️ Executando Bootstrap..." -ForegroundColor Gray
     $BootstrapArgs = @()
@@ -44,21 +55,24 @@ if (-not $Prod) {
     }
 }
 
-# Docker compose args
+# Em produção, garantimos o pull das imagens
+if ($Prod) {
+    Write-Host "📥 Atualizando imagens do ECR/Docker Hub..." -ForegroundColor Gray
+    # Usamos o operador de chamada '&' para executar a variável como comando
+    & (Get-Variable DockerCmd -ValueOnly) -f $ComposeFile pull
+}
+
+# Docker compose args (Removido o 'up' e '-d' fixos para usar dinamicamente no comando final)
 $ComposeArgs = @("-f", $ComposeFile, "up", "-d", "--remove-orphans")
 
 if ($Build) {
     $ComposeArgs += "--build"
 }
 
-# Em produção, geralmente queremos dar um pull antes para garantir as imagens do ECR
-if ($Prod) {
-    Write-Host "📥 Atualizando imagens do ECR/Docker Hub..." -ForegroundColor Gray
-    docker-compose -f $ComposeFile pull
-}
+Write-Host "`n🐳 Executando: $DockerCmd -f $ComposeFile up -d $($Build ? '--build' : '')" -ForegroundColor Cyan
 
-Write-Host "`n🐳 Executando: docker-compose -f $ComposeFile up -d $($Build ? '--build' : '')" -ForegroundColor Cyan
-docker-compose @ComposeArgs
+# Execução Final
+& (Get-Variable DockerCmd -ValueOnly) @ComposeArgs
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "`n✅ Infraestrutura iniciada com sucesso via $ComposeFile!" -ForegroundColor Green
