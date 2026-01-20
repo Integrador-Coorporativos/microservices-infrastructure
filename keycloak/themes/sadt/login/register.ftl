@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <title>SADT - Cadastro</title>
-    <link rel="stylesheet" href="resources/css/custom.css.css"/>
+    <link rel="stylesheet" href="${url.resourcesPath}/css/custom-login.css"/>
 </head>
 <body>
     <div class="kc-register-container">

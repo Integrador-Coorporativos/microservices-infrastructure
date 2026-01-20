@@ -156,7 +156,7 @@ services:
       - academic-network
     volumes:
       - ./keycloak/realms/import:/opt/keycloak/data/import
-      #- ./keycloak/themes/sadt:/opt/keycloak/themes/sadt
+      - ./keycloak/themes/sadt:/opt/keycloak/themes/sadt
 
   rabbitmq:
     image: rabbitmq:3-management
