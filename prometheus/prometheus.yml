@@ -13,13 +13,13 @@ scrape_configs:
     metrics_path: /actuator/prometheus
     static_configs:
       - targets:
-          - "if-performance_academic-service:8085"
+          - "if-performance-academic-service:8085"
 
   - job_name: "import-and-report-service"
     metrics_path: /actuator/prometheus
     static_configs:
       - targets:
-          - "if-performance_import-and-report-service:8082"
+          - "if-performance-import-and-report-service:8082"
 
   - job_name: "redis"
     static_configs:
@@ -29,3 +29,8 @@ scrape_configs:
   - job_name: 'rabbitmq'
     static_configs:
       - targets: ['if-performance-rabbitmq:15692']
+
+  - job_name: 'minio'
+    metrics_path: '/minio/v2/metrics/cluster'
+    static_configs:
+      - targets: ['if-performance-minio:9000']
