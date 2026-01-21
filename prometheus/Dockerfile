@@ -6,7 +6,7 @@ WORKDIR /prometheus
 
 # Copia o seu arquivo de configuração local para dentro da imagem
 # Certifique-se de que o arquivo prometheus.yml está na mesma pasta que este Dockerfile
-COPY ./prometheus/prometheus.yml /etc/prometheus/prometheus.yml
+COPY prometheus.yml /etc/prometheus/prometheus.yml
 
 # Expõe a porta padrão
 EXPOSE 9090

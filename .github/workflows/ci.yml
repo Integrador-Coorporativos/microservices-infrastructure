@@ -10,6 +10,8 @@ jobs:
     # Define as saídas para os próximos jobs
     outputs:
       keycloak: ${{ steps.filter.outputs.keycloak }}
+      rabbitmq: ${{ steps.filter.outputs.rabbitmq }}
+      prometheus: ${{ steps.filter.outputs.prometheus }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
