@@ -9,14 +9,23 @@ scrape_configs:
       - targets:
           - "localhost:9090"
 
-  - job_name: "spring-boot"
+  - job_name: "academic-service"
     metrics_path: /actuator/prometheus
     static_configs:
       - targets:
-          - "class-service:8082"
+          - "if-performance_academic-service:8085"
+
+  - job_name: "import-and-report-service"
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - "if-performance_import-and-report-service:8082"
 
   - job_name: "redis"
     static_configs:
       - targets:
-          - "redis-exporter:9121"
-          
+          - "if-performance-redis-exporter:9121"
+
+  - job_name: 'rabbitmq'
+    static_configs:
+      - targets: ['if-performance-rabbitmq:15692']

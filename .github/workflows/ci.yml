@@ -20,6 +20,8 @@ jobs:
               - 'keycloak/**'
             rabbitmq:
               - 'rabbitmq/**'
+            prometheus:
+              - 'prometheus/**'
 
   deploy-keycloak:
     needs: changes
@@ -36,3 +38,11 @@ jobs:
     steps:
       - name: Trigger Easypanel RabbitMQ
         run: curl -X POST "${{ secrets.EASYPANEL_RABBITMQ_WEBHOOK }}"
+
+  deploy-prometheus:
+    needs: changes
+    if: ${{ needs.changes.outputs.prometheus== 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Easypanel Prometheus
+        run: curl -X POST "${{ secrets.EASYPANEL_PROMETHEUS_WEBHOOK }}"

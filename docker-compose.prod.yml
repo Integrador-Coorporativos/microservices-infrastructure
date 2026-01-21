@@ -229,22 +229,6 @@ services:
     networks:
       - infra
 
-  nginx:
-      image: nginx:alpine
-      container_name: nginx-srv
-      restart: always
-      ports:
-        - "80:80"
-        - "443:443"
-      volumes:
-        # O Docker vai pegar a pasta que o Git acabou de baixar
-        - ./nginx/conf.d:/etc/nginx/conf.d
-        - ./nginx/certs:/etc/nginx/certs
-      depends_on:
-        - import-and-report-service
-        - academic-service
-      networks:
-        - infra
 
 networks:
   academic-network:
