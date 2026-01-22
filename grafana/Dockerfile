@@ -16,6 +16,11 @@ RUN curl -sL https://grafana.com/api/dashboards/19004/revisions/1/download -o /e
     curl -sL https://grafana.com/api/dashboards/10991/revisions/11/download -o /etc/grafana/provisioning/dashboards/files/rabbitmq.json && \
     curl -sL https://grafana.com/api/dashboards/13502/revisions/1/download -o /etc/grafana/provisioning/dashboards/files/minio.json
 
+
+# Ele busca o padrão "${DS_PROMETHEUS}" (ou similares) e troca pela string "Prometheus"
+RUN sed -i 's/\${DS_PROMETHEUS}/Prometheus/g' /etc/grafana/provisioning/dashboards/files/*.json && \
+    sed -i 's/\"datasource\": null/\"datasource\": \"Prometheus\"/g' /etc/grafana/provisioning/dashboards/files/*.json
+
 COPY provisioning/ /etc/grafana/provisioning/
 
 # Volta para o usuário padrão do Grafana por segurança

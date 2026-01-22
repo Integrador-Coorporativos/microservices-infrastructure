@@ -3,6 +3,6 @@ apiVersion: 1
 datasources:
   - name: Prometheus
     type: prometheus
-    access: proxy
+    uid: Prometheus
     url: https://if-performance-prometheus.zgx7iz.easypanel.host
     isDefault: true
