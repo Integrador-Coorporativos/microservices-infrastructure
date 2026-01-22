@@ -16,26 +16,7 @@ RUN curl -sL https://grafana.com/api/dashboards/19004/revisions/1/download -o /e
     curl -sL https://grafana.com/api/dashboards/10991/revisions/11/download -o /etc/grafana/provisioning/dashboards/files/rabbitmq.json && \
     curl -sL https://grafana.com/api/dashboards/13502/revisions/1/download -o /etc/grafana/provisioning/dashboards/files/minio.json
 
-# 2. Cria o arquivo de configuração de Dashboards (o "mapa")
-RUN echo 'apiVersion: 1 \n\
-providers: \n\
-  - name: "Automated Dashboards" \n\
-    orgId: 1 \n\
-    folder: "Services" \n\
-    type: file \n\
-    disableDeletion: false \n\
-    editable: true \n\
-    options: \n\
-      path: /etc/grafana/provisioning/dashboards/files' > /etc/grafana/provisioning/dashboards/automation.yaml
-
-# 3. Cria o arquivo de Datasource (conecta no seu Prometheus automaticamente)
-RUN echo 'apiVersion: 1 \n\
-datasources: \n\
-  - name: Prometheus \n\
-    type: prometheus \n\
-    access: proxy \n\
-    url: https://if-performance-prometheus.zgx7iz.easypanel.host \n\
-    isDefault: true' > /etc/grafana/provisioning/datasources/datasource.yaml
+COPY provisioning/ /etc/grafana/provisioning/
 
 # Volta para o usuário padrão do Grafana por segurança
 USER grafana
