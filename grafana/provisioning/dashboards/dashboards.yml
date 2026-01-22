@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: 'Default'               # Nome do grupo de dashboards
+    orgId: 1
+    folder: 'Infraestrutura'      # Pasta onde eles vão aparecer no Grafana
+    type: file
+    disableDeletion: false        # Se true, não deixa apagar pelo painel
+    editable: true                # Se true, deixa você editar no painel
+    options:
+      path: /etc/grafana/provisioning/dashboards/files # Caminho dentro do container

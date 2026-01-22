@@ -12,6 +12,7 @@ jobs:
       keycloak: ${{ steps.filter.outputs.keycloak }}
       rabbitmq: ${{ steps.filter.outputs.rabbitmq }}
       prometheus: ${{ steps.filter.outputs.prometheus }}
+      grafana: ${{ steps.filter.outputs.grafana }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -24,6 +25,8 @@ jobs:
               - 'rabbitmq/**'
             prometheus:
               - 'prometheus/**'
+            grafana:
+              - 'grafana/**'
 
   deploy-keycloak:
     needs: changes
@@ -48,3 +51,11 @@ jobs:
     steps:
       - name: Trigger Easypanel Prometheus
         run: curl -X POST "${{ secrets.EASYPANEL_PROMETHEUS_WEBHOOK }}"
+
+  deploy-grafana:
+    needs: changes
+    if: ${{ needs.changes.outputs.grafana== 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Easypanel Grafana
+        run: curl -X POST "${{ secrets.EASYPANEL_GRAFANA_WEBHOOK }}"
