@@ -5,8 +5,8 @@
   "defaultSignatureAlgorithm": "RS256",
   "revokeRefreshToken": false,
   "refreshTokenMaxReuse": 0,
-  "accessTokenLifespan": 300,
-  "accessTokenLifespanForImplicitFlow": 900,
+  "accessTokenLifespan": 1500,
+  "accessTokenLifespanForImplicitFlow": 3600,
   "ssoSessionIdleTimeout": 1800,
   "ssoSessionMaxLifespan": 36000,
   "ssoSessionIdleTimeoutRememberMe": 0,
@@ -23,14 +23,14 @@
   "accessCodeLifespanLogin": 1800,
   "actionTokenGeneratedByAdminLifespan": 43200,
   "actionTokenGeneratedByUserLifespan": 300,
-  "oauth2DeviceCodeLifespan": 600,
+  "oauth2DeviceCodeLifespan": 900,
   "oauth2DevicePollingInterval": 5,
   "enabled": true,
   "sslRequired": "external",
   "registrationAllowed": true,
   "registrationEmailAsUsername": false,
   "rememberMe": true,
-  "verifyEmail": false,
+  "verifyEmail": true,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
   "resetPasswordAllowed": true,
@@ -65,6 +65,15 @@
         "attributes": {}
       },
       {
+        "id": "209452bd-0198-4675-9c8e-05e5f6cda6bf",
+        "name": "ROLE_STUDENT",
+        "description": "",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "c2dede02-bd18-4859-b0a3-5c2da12b0fb1",
+        "attributes": {}
+      },
+      {
         "id": "c3b06e74-affe-48d3-8946-b052da30c896",
         "name": "default-roles-ifrn",
         "description": "${role_default-roles}",
@@ -81,6 +90,15 @@
             ]
           }
         },
+        "clientRole": false,
+        "containerId": "c2dede02-bd18-4859-b0a3-5c2da12b0fb1",
+        "attributes": {}
+      },
+      {
+        "id": "e6ea3457-39d5-4505-b223-97cefa5a80d4",
+        "name": "ROLE_PROFESSOR",
+        "description": "",
+        "composite": false,
         "clientRole": false,
         "containerId": "c2dede02-bd18-4859-b0a3-5c2da12b0fb1",
         "attributes": {}
@@ -223,8 +241,8 @@
                 "query-groups",
                 "view-authorization",
                 "manage-authorization",
-                "manage-identity-providers",
                 "create-client",
+                "manage-identity-providers",
                 "view-users",
                 "view-events",
                 "manage-clients",
@@ -402,10 +420,44 @@
           "containerId": "521e1516-290e-4a16-ae54-95a307a9b131",
           "attributes": {}
         }
+      ],
+      "infraestructure-admin": [
+        {
+          "id": "3c3b72ee-0fb9-4e26-9d81-2287805cbae4",
+          "name": "admin-infra",
+          "description": "",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "af9c81ff-d86d-428e-a03c-51303f287dc4",
+          "attributes": {}
+        }
       ]
     }
   },
-  "groups": [],
+  "groups": [
+    {
+      "id": "b7c358ae-21b9-4f21-b980-9be334bf8f62",
+      "name": "Students",
+      "path": "/Students",
+      "subGroups": [],
+      "attributes": {},
+      "realmRoles": [
+        "ROLE_STUDENT"
+      ],
+      "clientRoles": {}
+    },
+    {
+      "id": "453acc04-f21d-497d-8c3c-e865caa22533",
+      "name": "Teachers",
+      "path": "/Teachers",
+      "subGroups": [],
+      "attributes": {},
+      "realmRoles": [
+        "ROLE_PROFESSOR"
+      ],
+      "clientRoles": {}
+    }
+  ],
   "defaultRole": {
     "id": "c3b06e74-affe-48d3-8946-b052da30c896",
     "name": "default-roles-ifrn",
@@ -508,12 +560,22 @@
       "clientAuthenticatorType": "client-secret",
       "secret": "NhZI2ZqkycyHPofxWaNNG9bxR1OGCdk8",
       "redirectUris": [
+        "http://if-performance-import-and-report-service.zgx7iz.easypanel.host/*",
+        "https://if-performance-academic-service.zgx7iz.easypanel.host/*",
+        "http://localhost:8888/*",
         "http://localhost:8082/*",
-        "http://localhost:8085/*"
+        "https://if-performance-import-and-report-service.zgx7iz.easypanel.host/*",
+        "http://localhost:8085/*",
+        "http://if-performance-academic-service.zgx7iz.easypanel.host/*"
       ],
       "webOrigins": [
+        "https://if-performance-import-and-report-service.zgx7iz.easypanel.host",
         "http://localhost:8085",
-        "http://localhost:8082"
+        "http://localhost:8888",
+        "http://localhost:8082",
+        "http://if-performance-import-and-report-service.zgx7iz.easypanel.host",
+        "http://if-performance-academic-service.zgx7iz.easypanel.host",
+        "https://if-performance-academic-service.zgx7iz.easypanel.host"
       ],
       "notBefore": 0,
       "bearerOnly": false,
@@ -532,8 +594,8 @@
         "backchannel.logout.session.required": "true",
         "client_credentials.use_refresh_token": "false",
         "post.logout.redirect.uris": "+",
-        "oauth2.device.authorization.grant.enabled": "false",
         "display.on.consent.screen": "false",
+        "oauth2.device.authorization.grant.enabled": "false",
         "backchannel.logout.revoke.offline.tokens": "false"
       },
       "authenticationFlowBindingOverrides": {},
@@ -548,8 +610,9 @@
           "consentRequired": false,
           "config": {
             "user.session.note": "client_id",
-            "id.token.claim": "true",
             "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
             "access.token.claim": "true",
             "claim.name": "client_id",
             "jsonType.label": "String"
@@ -563,8 +626,9 @@
           "consentRequired": false,
           "config": {
             "user.session.note": "clientHost",
-            "id.token.claim": "true",
             "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
             "access.token.claim": "true",
             "claim.name": "clientHost",
             "jsonType.label": "String"
@@ -578,8 +642,9 @@
           "consentRequired": false,
           "config": {
             "user.session.note": "clientAddress",
-            "id.token.claim": "true",
             "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
             "access.token.claim": "true",
             "claim.name": "clientAddress",
             "jsonType.label": "String"
@@ -722,7 +787,9 @@
       "publicClient": true,
       "frontchannelLogout": false,
       "protocol": "openid-connect",
-      "attributes": {},
+      "attributes": {
+        "post.logout.redirect.uris": "+"
+      },
       "authenticationFlowBindingOverrides": {},
       "fullScopeAllowed": false,
       "nodeReRegistrationTimeout": 0,
@@ -761,7 +828,9 @@
       "publicClient": false,
       "frontchannelLogout": false,
       "protocol": "openid-connect",
-      "attributes": {},
+      "attributes": {
+        "post.logout.redirect.uris": "+"
+      },
       "authenticationFlowBindingOverrides": {},
       "fullScopeAllowed": false,
       "nodeReRegistrationTimeout": 0,
@@ -793,13 +862,15 @@
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "none",
       "redirectUris": [
+        "https://if-performance-frontend.zgx7iz.easypanel.host/*",
         "http://localhost:8082/*",
         "http://localhost:5173/*",
         "https://oauth.pstmn.io/v1/callback"
       ],
       "webOrigins": [
         "",
-        "http://localhost:5173"
+        "http://localhost:5173",
+        "https://if-performance-frontend.zgx7iz.easypanel.host"
       ],
       "notBefore": 0,
       "bearerOnly": false,
@@ -815,8 +886,66 @@
         "oidc.ciba.grant.enabled": "false",
         "backchannel.logout.session.required": "true",
         "post.logout.redirect.uris": "+",
-        "oauth2.device.authorization.grant.enabled": "false",
         "display.on.consent.screen": "false",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "backchannel.logout.revoke.offline.tokens": "false"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "roles",
+        "profile",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ]
+    },
+    {
+      "id": "af9c81ff-d86d-428e-a03c-51303f287dc4",
+      "clientId": "infraestructure-admin",
+      "name": "",
+      "description": "",
+      "rootUrl": "",
+      "adminUrl": "",
+      "baseUrl": "",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "**********",
+      "redirectUris": [
+        "",
+        "http://localhost/*",
+        "https://if-performance-grafana.zgx7iz.easypanel.host/*"
+      ],
+      "webOrigins": [
+        "https://if-performance-grafana.zgx7iz.easypanel.host",
+        "https://console-if-performance-minio.zgx7iz.easypanel.host"
+      ],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "publicClient": false,
+      "frontchannelLogout": true,
+      "protocol": "openid-connect",
+      "attributes": {
+        "oidc.ciba.grant.enabled": "false",
+        "client.secret.creation.time": "1769002089",
+        "backchannel.logout.session.required": "true",
+        "display.on.consent.screen": "false",
+        "oauth2.device.authorization.grant.enabled": "false",
         "backchannel.logout.revoke.offline.tokens": "false"
       },
       "authenticationFlowBindingOverrides": {},
@@ -857,7 +986,9 @@
       "publicClient": false,
       "frontchannelLogout": false,
       "protocol": "openid-connect",
-      "attributes": {},
+      "attributes": {
+        "post.logout.redirect.uris": "+"
+      },
       "authenticationFlowBindingOverrides": {},
       "fullScopeAllowed": false,
       "nodeReRegistrationTimeout": 0,
@@ -989,6 +1120,7 @@
           "config": {
             "introspection.token.claim": "true",
             "multivalued": "true",
+            "userinfo.token.claim": "true",
             "user.attribute": "foo",
             "id.token.claim": "true",
             "access.token.claim": "true",
@@ -1072,8 +1204,9 @@
           "consentRequired": false,
           "config": {
             "user.session.note": "AUTH_TIME",
-            "id.token.claim": "true",
             "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
             "access.token.claim": "true",
             "claim.name": "auth_time",
             "jsonType.label": "long"
@@ -1178,7 +1311,8 @@
           "config": {
             "id.token.claim": "true",
             "introspection.token.claim": "true",
-            "access.token.claim": "true"
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
           }
         }
       ]
@@ -1239,6 +1373,23 @@
             "id.token.claim": "true",
             "access.token.claim": "true",
             "claim.name": "given_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "d505bdc2-c433-41b4-a4bd-9fc098bf1561",
+          "name": "type_user_mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "type_user",
+            "id.token.claim": "true",
+            "lightweight.claim": "false",
+            "access.token.claim": "true",
+            "claim.name": "type_user",
             "jsonType.label": "String"
           }
         },
@@ -1544,8 +1695,21 @@
     "xXSSProtection": "1; mode=block",
     "strictTransportSecurity": "max-age=31536000; includeSubDomains"
   },
-  "smtpServer": {},
-  "loginTheme": "sadt",
+  "smtpServer": {
+    "password": "**********",
+    "replyToDisplayName": "",
+    "starttls": "true",
+    "auth": "true",
+    "port": "587",
+    "replyTo": "",
+    "host": "smtp.mailersend.net",
+    "from": "noreply2@edxlabs.com.br",
+    "fromDisplayName": "IF Performance",
+    "envelopeFrom": "",
+    "ssl": "false",
+    "user": "MS_k4YKTY@edxlabs.com.br"
+  },
+  "loginTheme": "keycloak",
   "accountTheme": "",
   "adminTheme": "",
   "emailTheme": "",
@@ -1556,7 +1720,30 @@
   "enabledEventTypes": [],
   "adminEventsEnabled": false,
   "adminEventsDetailsEnabled": false,
-  "identityProviders": [],
+  "identityProviders": [
+    {
+      "alias": "google",
+      "internalId": "3d5958b9-e966-40ff-8819-a01ab80c19d8",
+      "providerId": "google",
+      "enabled": true,
+      "updateProfileFirstLoginMode": "on",
+      "trustEmail": false,
+      "storeToken": false,
+      "addReadTokenRoleOnCreate": false,
+      "authenticateByDefault": false,
+      "linkOnly": false,
+      "config": {
+        "hideOnLoginPage": "false",
+        "acceptsPromptNoneForwardFromClient": "false",
+        "clientId": "611716545680-6v45r9biq02hsleuadmee4adpajjv5rs.apps.googleusercontent.com",
+        "disableUserInfo": "false",
+        "filteredByClaim": "false",
+        "syncMode": "LEGACY",
+        "clientSecret": "**********",
+        "caseSensitiveOriginalUsername": "false"
+      }
+    }
+  ],
   "identityProviderMappers": [],
   "components": {
     "org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy": [
@@ -1576,14 +1763,14 @@
         "subComponents": {},
         "config": {
           "allowed-protocol-mapper-types": [
-            "oidc-usermodel-property-mapper",
-            "oidc-full-name-mapper",
-            "oidc-address-mapper",
-            "oidc-sha256-pairwise-sub-mapper",
             "saml-user-property-mapper",
-            "oidc-usermodel-attribute-mapper",
+            "oidc-full-name-mapper",
             "saml-role-list-mapper",
-            "saml-user-attribute-mapper"
+            "saml-user-attribute-mapper",
+            "oidc-sha256-pairwise-sub-mapper",
+            "oidc-address-mapper",
+            "oidc-usermodel-attribute-mapper",
+            "oidc-usermodel-property-mapper"
           ]
         }
       },
@@ -1627,13 +1814,13 @@
         "subComponents": {},
         "config": {
           "allowed-protocol-mapper-types": [
-            "saml-user-property-mapper",
-            "oidc-usermodel-property-mapper",
-            "saml-role-list-mapper",
             "oidc-sha256-pairwise-sub-mapper",
+            "saml-role-list-mapper",
             "oidc-full-name-mapper",
-            "saml-user-attribute-mapper",
             "oidc-usermodel-attribute-mapper",
+            "oidc-usermodel-property-mapper",
+            "saml-user-attribute-mapper",
+            "saml-user-property-mapper",
             "oidc-address-mapper"
           ]
         }
@@ -1662,6 +1849,18 @@
         "config": {
           "allow-default-scopes": [
             "true"
+          ]
+        }
+      }
+    ],
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "id": "deea3e42-43f5-488b-9c20-e1f5a772867b",
+        "providerId": "declarative-user-profile",
+        "subComponents": {},
+        "config": {
+          "kc.user.profile.config": [
+            "{\"attributes\":[{\"name\":\"username\",\"displayName\":\"${username}\",\"validations\":{\"length\":{\"min\":3,\"max\":255},\"username-prohibited-characters\":{},\"up-username-not-idn-homograph\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"email\",\"displayName\":\"${email}\",\"validations\":{\"email\":{},\"length\":{\"max\":255}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"firstName\",\"displayName\":\"${firstName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"lastName\",\"displayName\":\"${lastName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"type_user\",\"displayName\":\"Você é?\",\"validations\":{\"options\":{\"options\":[\"Aluno\",\"Professor\"]}},\"annotations\":{\"inputType\":\"select\"},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false}],\"groups\":[{\"name\":\"user-metadata\",\"displayHeader\":\"User metadata\",\"displayDescription\":\"Attributes, which refer to user metadata\"}]}"
           ]
         }
       }
@@ -1848,6 +2047,67 @@
           "priority": 20,
           "autheticatorFlow": true,
           "flowAlias": "Account verification options",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "7fd1418c-8b1e-4f48-b0ac-8bd322c6f209",
+      "alias": "Registration Based In Groups",
+      "description": "registration flow",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "registration-page-form",
+          "authenticatorFlow": true,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": true,
+          "flowAlias": "Registration Based In Groups registration form",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "cff4fda7-d7d3-4fb5-8295-d99536200a18",
+      "alias": "Registration Based In Groups registration form",
+      "description": "registration form",
+      "providerId": "form-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "registration-user-creation",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "registration-password-action",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 50,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "registration-recaptcha-action",
+          "authenticatorFlow": false,
+          "requirement": "DISABLED",
+          "priority": 60,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "registration-terms-and-conditions",
+          "authenticatorFlow": false,
+          "requirement": "DISABLED",
+          "priority": 70,
+          "autheticatorFlow": false,
           "userSetupAllowed": false
         }
       ]
@@ -2282,7 +2542,7 @@
       "name": "Update Password",
       "providerId": "UPDATE_PASSWORD",
       "enabled": true,
-      "defaultAction": false,
+      "defaultAction": true,
       "priority": 30,
       "config": {}
     },
@@ -2291,7 +2551,7 @@
       "name": "Update Profile",
       "providerId": "UPDATE_PROFILE",
       "enabled": true,
-      "defaultAction": false,
+      "defaultAction": true,
       "priority": 40,
       "config": {}
     },
@@ -2300,7 +2560,7 @@
       "name": "Verify Email",
       "providerId": "VERIFY_EMAIL",
       "enabled": true,
-      "defaultAction": false,
+      "defaultAction": true,
       "priority": 50,
       "config": {}
     },
@@ -2372,14 +2632,19 @@
     "clientOfflineSessionMaxLifespan": "0",
     "oauth2DevicePollingInterval": "5",
     "clientSessionIdleTimeout": "0",
+    "actionTokenGeneratedByUserLifespan.verify-email": "",
+    "actionTokenGeneratedByUserLifespan.idp-verify-account-via-email": "",
     "clientOfflineSessionIdleTimeout": "0",
+    "actionTokenGeneratedByUserLifespan.execute-actions": "",
     "cibaInterval": "5",
     "realmReusableOtpCode": "false",
     "cibaExpiresIn": "120",
-    "oauth2DeviceCodeLifespan": "600",
+    "oauth2DeviceCodeLifespan": "900",
     "parRequestUriLifespan": "60",
     "clientSessionMaxLifespan": "0",
-    "organizationsEnabled": "false"
+    "organizationsEnabled": "false",
+    "shortVerificationUri": "",
+    "actionTokenGeneratedByUserLifespan.reset-credentials": ""
   },
   "keycloakVersion": "25.0.6",
   "userManagedAccessAllowed": false,
