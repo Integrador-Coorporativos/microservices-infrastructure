@@ -1,0 +1,37 @@
+/* Estilização Geral de Alertas */
+.alert {
+    padding: 12px;
+    border-radius: 6px;
+    margin-top: 20px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    line-height: 1.4;
+}
+
+.alert .icon {
+    font-size: 16px;
+}
+
+/* Variante: ERRO (ex: SMTP falhou, e-mail inválido) */
+.alert-error {
+    background-color: #fff1f0;
+    border: 1px solid #ffa39e;
+    color: #cf1322;
+}
+
+/* Variante: SUCESSO (ex: Perfil atualizado!) */
+.alert-success {
+    background-color: #f6ffed;
+    border: 1px solid #b7eb8f;
+    color: #389e0d;
+}
+
+/* Variante: AVISO (ex: Você precisa verificar seu e-mail) */
+.alert-warning {
+    background-color: #fffbe6;
+    border: 1px solid #ffe58f;
+    color: #d46b08;
+}

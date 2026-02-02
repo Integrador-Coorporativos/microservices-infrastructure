@@ -9,7 +9,7 @@
 }
 
 body {
-    /* Fundo branco/cinza claro para destacar a área de login */
+    /* Fundo branco/cinza claro para destacar os cards */
     background-color: #fcfcfc; 
     height: 100vh;
     display: flex;
@@ -18,21 +18,24 @@ body {
     padding: 20px;
 }
 
-/* Container de Login e Registro com sombra pesada */
+/* Containers de Login e Registro */
 .kc-login-container, 
 .kc-register-container {
     background: #ffffff;
     padding: 40px;
     border-radius: 12px;
-    /* Sombra mais profunda para dar destaque sobre o fundo branco */
+    /* Sombra profunda para destacar no fundo claro */
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12), 0 4px 10px rgba(0, 0, 0, 0.05);
     width: 100%;
-    max-width: 400px;
     text-align: center;
-    border: 1px solid #f0f0f0; /* Borda sutil para definir o card */
+    border: 1px solid #f0f0f0;
 }
 
-/* Logo / Título */
+/* Diferença sutil de largura entre as telas */
+.kc-login-container { max-width: 400px; }
+.kc-register-container { max-width: 440px; }
+
+/* Títulos */
 .kc-login-container h1,
 .kc-register-container h1 {
     font-size: 28px;
@@ -58,7 +61,7 @@ body {
     line-height: 1.5;
 }
 
-/* Estilo dos Formulários */
+/* Formulários */
 #kc-form-login,
 #kc-register-form {
     display: flex;
@@ -83,7 +86,17 @@ input:focus, select:focus {
     box-shadow: 0 0 0 4px rgba(2, 122, 30, 0.08);
 }
 
-/* Botão de Ação */
+/* Customizando a seta do Select */
+select {
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2300420c' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    padding-right: 40px;
+    appearance: none;
+}
+
+/* Botões */
 button {
     background-color: #027a1e;
     color: white;
@@ -93,41 +106,42 @@ button {
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
-    transition: transform 0.1s, background 0.3s;
+    transition: all 0.2s;
     margin-top: 10px;
 }
 
 button:hover {
     background-color: #00420c;
+    box-shadow: 0 4px 12px rgba(0, 66, 12, 0.2);
 }
 
 button:active {
     transform: scale(0.98);
 }
 
-/* Links auxiliares */
+/* Links auxiliares e Rodapé */
 .forgot-password {
     text-align: right;
     margin-top: -5px;
 }
 
-.forgot-password a, .footer-text a {
+.footer-text, .forgot-password a {
+    margin-top: 20px;
     font-size: 13px;
+    color: #666;
+}
+
+.footer-text a, .forgot-password a {
     color: #027a1e;
     text-decoration: none;
     font-weight: 600;
-}
-
-.footer-text {
-    margin-top: 20px;
-    color: #666;
 }
 
 .footer-text a:hover, .forgot-password a:hover {
     text-decoration: underline;
 }
 
-/* Alertas de Erro */
+/* Mensagens de Erro */
 .alert-error {
     background-color: #fff1f0;
     border: 1px solid #ffa39e;
@@ -136,4 +150,5 @@ button:active {
     border-radius: 6px;
     margin-top: 20px;
     font-size: 14px;
+    font-weight: 500;
 }
