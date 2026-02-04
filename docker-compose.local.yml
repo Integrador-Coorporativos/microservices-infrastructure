@@ -147,7 +147,7 @@ services:
       #KC_LOG_LEVEL: DEBUG
       #KC_LOG_CONSOLE_LEVEL: DEBUG
 
-      KC_HTTP_RELATIVE_PATH: /auth
+      KC_HTTP_RELATIVE_PATH: /
       KC_THEME_CACHE_THEMES: "false"
       KC_THEME_CACHE_TEMPLATES: "false"
     ports:
