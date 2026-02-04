@@ -14,4 +14,4 @@ ENTRYPOINT ["/opt/keycloak/bin/kc.sh"]
 
 # Adicionei o argumento --http-relative-path caso você use subcaminhos, 
 # mas o principal é o --import-realm
-CMD ["start-dev", "--import-realm"]
+CMD ["start-dev", "--import-realm", "--metrics-enabled=true"]
