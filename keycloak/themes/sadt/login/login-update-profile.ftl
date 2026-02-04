@@ -34,7 +34,7 @@
 
             <div class="input-group">
                 <label for="type_user">Você é?</label>
-                <select name="user.attributes.type_user" id="user.attributes.type_user">
+                <select name="user.attributes.type_user" id="type_user" required>
                     <option value="ROLE_ALUNO" 
                         <#if (register.formData['user.attributes.type_user']!'') == 'ROLE_ALUNO'>selected</#if>>
                         Aluno

@@ -32,7 +32,6 @@
             <div class="custom-select-wrapper" style="text-align: left; margin-bottom: 15px;">
                 <label style="font-size: 12px; color: #666; margin-left: 5px;">Você é?</label>
                 <select name="user.attributes.type_user" id="type_user" required>
-                <select name="user.attributes.type_user" id="user.attributes.type_user">
                     <option value="ROLE_ALUNO" 
                         <#if (register.formData['user.attributes.type_user']!'') == 'ROLE_ALUNO'>selected</#if>>
                         Aluno
