@@ -34,17 +34,20 @@
 
             <div class="input-group">
                 <label for="type_user">Você é?</label>
-                <select name="user.attributes.type_user" id="type_user" required>
-                    <option value="Aluno" <#if (user.attributes.type_user!'') == 'Aluno'>selected</#if>>Aluno</option>
-                    <option value="Professor" <#if (user.attributes.type_user!'') == 'Professor'>selected</#if>>Professor</option>
+                <select name="user.attributes.type_user" id="user.attributes.type_user">
+                    <option value="ROLE_ALUNO" 
+                        <#if (register.formData['user.attributes.type_user']!'') == 'ROLE_ALUNO'>selected</#if>>
+                        Aluno
+                    </option>
+                    <option value="ROLE_PROFESSOR" 
+                        <#if (register.formData['user.attributes.type_user']!'') == 'ROLE_PROFESSOR'>selected</#if>>
+                        Professor
+                    </option>
                 </select>
             </div>
             
             <button type="submit">Salvar Alterações</button>
         </form>
-
-
-
     </div>
 </body>
 </html>
